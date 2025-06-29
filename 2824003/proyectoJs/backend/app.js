@@ -1,39 +1,43 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
-import { pool } from './config/database.js'; // Import nombrado
+import cors from 'cors';
+
+import salasRouter from './src/routes/salasRoutes.js';
+import authRouter from './src/routes/authRoutes.js';
+import { errorHandler } from './src/middlewares/errorHandler.js';
 
 const app = express();
 
-// Middleware básico para parsear JSON en las solicitudes
+app.use(cors());
 app.use(express.json());
 
-// ******************************************************
-// ** SOLUCIÓN PARA EL 404 EN LA RUTA RAÍZ (/) **
-// ******************************************************
 app.get('/', (req, res) => {
-  res.send('¡Bienvenido a la API de Reservas de Salas! Puedes probar /db-test para la conexión a la base de datos.');
+  res.send('¡API de Reservas de Salas funcionando!');
 });
-// ******************************************************
 
-// Ruta de prueba de conexión a DB
-app.get('/db-test', async (req, res) => {
-  try {
-    const [rows] = await pool.query("SELECT CURRENT_USER() AS user, DATABASE() AS db");
-    res.json({
-      status: "✅ Conexión exitosa",
-      user: rows[0].user,
-      database: rows[0].db
-    });
-  } catch (error) {
-    console.error("Error en /db-test al conectar con DB:", error);
-    res.status(500).json({
-      status: "❌ Error de conexión",
-      error: error.message,
-      solution: "Asegúrate de que tu base de datos MySQL esté corriendo y las credenciales sean correctas." // Mensaje actualizado
-    });
-  }
+// ===================================================================
+// RUTA DE PRUEBA: Vamos a ver si el servidor responde a esto.
+// ===================================================================
+app.get('/test-ruta', (req, res) => {
+  res.send('¡La ruta de prueba en app.js funciona!');
 });
+// ===================================================================
+
+// Usamos los routers importados
+app.use('/api/salas', salasRouter);
+app.use('/api/auth', authRouter);
+
+
+// Middlewares de Manejo de Errores
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'La ruta solicitada no existe.' });
+});
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor corriendo exitosamente en http://localhost:${PORT}`);
 });
