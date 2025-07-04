@@ -12,7 +12,7 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "navigo": "^8.11.1"
+    "navigo": "^8.11.1",
+    "sweetalert2": "^11.22.2"
   }
 }

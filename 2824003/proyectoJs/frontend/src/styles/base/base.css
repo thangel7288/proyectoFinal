@@ -1,0 +1,59 @@
+/* 1. Reseteo y Box-Sizing (¡muy importante para consistencia!) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. Estilos para todo el cuerpo de la página */
+body {
+  font-family: var(--fuente-principal); /* Usamos la variable que definimos */
+  background-color: var(--color-fondo);
+  color: var(--color-texto-principal);
+  line-height: 1.6;
+
+  display: flex;
+  align-items: center;    /* Centra verticalmente */
+  justify-content: center; /* Centra horizontalmente */
+  min-height: 100vh;        /* Asegura que el body ocupe toda la altura */
+}
+
+
+/* 3. Estilo para el contenedor principal de cada vista */
+/* Esta clase la usaremos para centrar nuestro contenido en una "tarjeta" */
+.main-container {
+   width: 100%;
+  max-width: 480px; /* Un buen tamaño para formularios */
+  margin: 1rem; 
+  padding: 2.5rem; /* Le damos más aire por dentro */
+  background-color: var(--color-superficie);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+/* 4. Estilos básicos para Títulos */
+h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--color-texto-principal);
+}
+
+h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-borde);
+  padding-bottom: 0.5rem;
+}
+
+/* 5. Estilos para los links (si los hubiera) */
+a {
+  color: var(--color-primario);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+

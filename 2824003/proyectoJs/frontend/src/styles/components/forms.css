@@ -1,0 +1,68 @@
+/* Estilos para todos los formularios */
+.sala-form, .login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* Un poco más de espacio entre elementos */
+  text-align: left; /* Alineamos el texto de los labels a la izquierda */
+}
+
+/* Grupo de label + input */
+.form-group {
+  width: 100%;
+  padding: 12px 15px; /* Más padding horizontal */
+  border: 1px solid var(--color-borde);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+}
+
+/* Estilo para las etiquetas (labels) */
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Estilo para los campos de texto (inputs) */
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--border-radius);
+  font-size: 16px;
+}
+
+/* Estilo para cuando el input está seleccionado (focus) */
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+/* Contenedor para los botones de acción (Guardar, Cancelar) */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* === Estilos Específicos para el Formulario de Login === */
+
+.login-container {
+  text-align: center; /* Centramos el título y el botón */
+}
+
+.login-container h2 {
+  font-size: 2.25rem; /* Hacemos el título 'Iniciar Sesión' mucho más grande */
+  margin-bottom: 2rem;
+}
+
+.login-form .form-group {
+  text-align: left; /* Alineamos las etiquetas a la izquierda */
+}
+
+.login-form input {
+  padding: 15px;      /* Hacemos los campos de texto más altos */
+  font-size: 1.1rem;  /* Agrandamos el texto dentro de los campos */
+}

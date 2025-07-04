@@ -1,0 +1,32 @@
+/* Estilos para la lista de salas */
+.lista-salas {
+  list-style: none; /* Quitamos los puntos de la lista */
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.lista-salas li {
+  display: flex;
+  justify-content: space-between; /* Alinea el texto a la izquierda y los botones a la derecha */
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  background-color: #fff;
+}
+
+.lista-salas li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease-in-out;
+}
+
+.lista-salas span {
+  font-size: 1.1rem;
+}
+
+.sala-actions {
+  display: flex;
+  gap: 0.5rem; /* Espacio entre los botones de Editar y Eliminar */
+}

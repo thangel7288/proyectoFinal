@@ -1,164 +1,98 @@
 import { salaService, authService } from '../../services/apiServices.js';
 import { router } from '../../router/index.js';
+import Swal from 'sweetalert2';
 
-// --- Helper Function (Función de Ayuda) ---
-// Para crear elementos de forma más limpia.
-function createElement(tag, attributes = {}, children = []) {
-    const element = document.createElement(tag);
-    for (const key in attributes) {
-        element.setAttribute(key, attributes[key]);
-    }
-    children.forEach(child => {
-        if (typeof child === 'string') {
-            element.appendChild(document.createTextNode(child));
-        } else {
-            element.appendChild(child);
-        }
-    });
-    return element;
-}
+/**
+ * Componente de página que renderiza la lista de salas.
+ * Ahora recibe un 'container' del MainLayout donde debe renderizarse.
+ * @param {HTMLElement} container - El elemento donde se inyectará el contenido.
+ */
+export const SalasListPage = (container) => {
+  const user = authService.getCurrentUser();
 
-export const SalasListPage = async (app) => {
-    // Protección de la ruta en el frontend
-    const token = localStorage.getItem('token');
-    if (!token) {
-        router.navigate('login');
-        return;
-    }
+  // HTML específico de esta página. Ya no contiene la estructura general como menús o botones de logout.
+  container.innerHTML = `
+    <div class="page-header">
+      <h1>Salas Disponibles</h1>
+      ${user.rol === 'admin' ? `<button id="crear-sala-btn" class="btn btn-primary">Crear Nueva Sala</button>` : ''}
+    </div>
+    <div id="salas-list-content" class="content-area">
+      <p>Cargando salas...</p>
+    </div>
+  `;
 
-    const user = authService.getCurrentUser();
+  // --- Lógica de eventos específica de esta página ---
+  const salasListContent = document.getElementById('salas-list-content');
 
-    // Limpiamos el contenido previo de la app
-    app.innerHTML = '';
+  // El botón para crear una sala ahora es parte de esta página
+  document.getElementById('crear-sala-btn')?.addEventListener('click', () => {
+    router.navigate('/salas/crear');
+  });
 
-    // --- Creación de Elementos del DOM ---
-    const mainContainer = createElement('div');
+  // Listener para los botones de la lista (Reservar, Editar, Eliminar)
+  salasListContent.addEventListener('click', async (e) => {
+    const salaElement = e.target.closest('li');
+    if (!salaElement) return;
 
-    const title = createElement('h1', {}, ['Salas Disponibles']);
-    const welcomeText = createElement('p', {}, [`Bienvenido, ${user ? user.nombre : 'Invitado'}! (Rol: ${user ? user.rol : 'N/A'})`]);
-    const logoutButton = createElement('button', { id: 'logout-button' }, ['Cerrar Sesión']);
-    const hr1 = createElement('hr');
-    
-    // Añadimos los elementos iniciales al contenedor principal
-    mainContainer.appendChild(title);
-    mainContainer.appendChild(welcomeText);
-    mainContainer.appendChild(logoutButton);
-    mainContainer.appendChild(hr1);
+    const salaId = salaElement.dataset.id;
 
-    // --- Lógica del Formulario de Administrador ---
-    if (user && user.rol === 'admin') {
-        const adminFormContainer = createElement('div', { id: 'admin-form-container' });
-        
-        const formTitle = createElement('h3', {}, ['Crear Nueva Sala']);
-        
-        const inputNombre = createElement('input', { type: 'text', id: 'nombre', placeholder: 'Nombre de la sala', required: '' });
-        const inputCapacidad = createElement('input', { type: 'number', id: 'capacidad', placeholder: 'Capacidad', required: '' });
-        const inputUbicacion = createElement('input', { type: 'text', id: 'ubicacion', placeholder: 'Ubicación', required: '' });
-        const submitButton = createElement('button', { type: 'submit' }, ['Crear Sala']);
-        
-        const createRoomForm = createElement('form', { id: 'create-room-form' }, [
-            inputNombre, inputCapacidad, inputUbicacion, submitButton
-        ]);
-
-        const formMessage = createElement('p', { id: 'form-message' });
-        const hr2 = createElement('hr');
-
-        adminFormContainer.appendChild(formTitle);
-        adminFormContainer.appendChild(createRoomForm);
-        adminFormContainer.appendChild(formMessage);
-        
-        mainContainer.appendChild(adminFormContainer);
-        mainContainer.appendChild(hr2);
-    }
-    
-    // --- Contenedores para la lista y errores ---
-    const listTitle = createElement('h2', {}, ['Lista de Salas']);
-    const roomsListContainer = createElement('div', { id: 'rooms-list' });
-    const roomsError = createElement('p', { id: 'rooms-error', class: 'error-message' });
-
-    mainContainer.appendChild(listTitle);
-    mainContainer.appendChild(roomsListContainer);
-    mainContainer.appendChild(roomsError);
-    
-    // Añadimos el contenedor principal al div 'app'
-    app.appendChild(mainContainer);
-
-
-    // --- Función para cargar y renderizar las salas ---
-    const loadRooms = async () => {
-        roomsListContainer.innerHTML = 'Cargando...'; // Mantenemos esto para feedback al usuario
-        roomsError.textContent = '';
+    if (e.target.classList.contains('btn-reservar')) {
+      router.navigate(`/reservas/crear/${salaId}`);
+    } 
+    else if (e.target.classList.contains('btn-edit')) {
+      router.navigate(`/salas/editar/${salaId}`);
+    } 
+    else if (e.target.classList.contains('btn-delete')) {
+      const result = await Swal.fire({
+        title: '¿Estás seguro?',
+        text: "No podrás revertir esta acción.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, ¡bórrala!'
+      });
+      if (result.isConfirmed) {
         try {
-            const salas = await salaService.getAll();
-            roomsListContainer.innerHTML = ''; // Limpiamos antes de añadir la lista
-            
-            if (salas && salas.mensaje) {
-                roomsListContainer.appendChild(createElement('p', {}, [salas.mensaje]));
-            } else if (salas.length > 0) {
-                const ul = createElement('ul');
-                salas.forEach(sala => {
-                    const li = createElement('li', {}, [`${sala.nombre} (Capacidad: ${sala.capacidad})`]);
-                    ul.appendChild(li);
-                });
-                roomsListContainer.appendChild(ul);
-            } else {
-                 roomsListContainer.appendChild(createElement('p', {}, ['No se encontraron salas.']));
-            }
-        } catch(error) {
-            roomsListContainer.innerHTML = '';
-            roomsError.textContent = 'Error al cargar las salas.';
-            console.error(error);
+          await salaService.deleteById(salaId);
+          salaElement.remove();
+          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Sala eliminada', showConfirmButton: false, timer: 2000 });
+        } catch (error) {
+          Swal.fire('Error', error.message, 'error');
         }
-    };
-    
-    // Cargar las salas al iniciar la página
-    loadRooms();
-
-    // --- Lógica de Eventos ---
-    if (user && user.rol === 'admin') {
-        const createForm = document.getElementById('create-room-form');
-        const formMessage = document.getElementById('form-message');
-
-        if (!salaService.create) { // Añadir el método de servicio si no existe
-            salaService.create = async (salaData) => {
-                const res = await fetch('http://localhost:3001/api/salas', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify(salaData)
-                });
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.message || 'No se pudo crear la sala');
-                }
-                return res.json();
-            };
-        }
-
-        createForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const salaData = {
-                nombre: document.getElementById('nombre').value,
-                capacidad: parseInt(document.getElementById('capacidad').value),
-                ubicacion: document.getElementById('ubicacion').value
-            };
-            try {
-                const result = await salaService.create(salaData);
-                formMessage.textContent = result.mensaje;
-                formMessage.setAttribute('style', 'color: green;');
-                createForm.reset();
-                loadRooms();
-            } catch (error) {
-                formMessage.textContent = error.message;
-                formMessage.setAttribute('style', 'color: red;');
-            }
-        });
+      }
     }
+  });
 
-    document.getElementById('logout-button').addEventListener('click', () => {
-        authService.logout();
-        router.navigate('login');
-    });
+  // --- Función para cargar y mostrar las salas ---
+  const loadSalas = async () => {
+    try {
+      const salas = await salaService.getAll();
+      if (salas.length === 0) {
+        salasListContent.innerHTML = '<p>No hay salas registradas.</p>';
+        return;
+      }
+      salasListContent.innerHTML = `
+        <ul class="lista-items">
+          ${salas.map(sala => `
+            <li data-id="${sala.id}">
+              <div class="item-info">
+                <strong>${sala.nombre}</strong>
+                <span>Capacidad: ${sala.capacidad} | Ubicación: ${sala.ubicacion || 'No especificada'}</span>
+              </div>
+              <div class="item-actions">
+                <button class="btn btn-secondary btn-reservar">Reservar</button>
+                ${user.rol === 'admin' ? `
+                  <button class="btn btn-secondary btn-edit">Editar</button>
+                  <button class="btn btn-danger btn-delete">Eliminar</button>
+                ` : ''}
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    } catch (error) { 
+        Swal.fire('Error', 'No se pudieron cargar las salas. ' + error.message, 'error');
+    }
+  };
+  
+  loadSalas();
 };

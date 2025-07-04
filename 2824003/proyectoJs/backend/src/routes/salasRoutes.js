@@ -1,15 +1,50 @@
-import { Router } from 'express';
-// Importamos las dos funciones (listar y crear) del controlador
-import { listarSalas, crearSala } from '../controllers/salasController.js'; 
-import { protect, admin } from '../middlewares/auth.js';
+import express from 'express';
+import { 
+    listarSalas, 
+    getSalaById, 
+    crearSala, 
+    eliminarSala, 
+    actualizarSala 
+} from '../controllers/salasController.js'; 
+// 1. Importamos 'authorize' en lugar de 'isAdmin'
+import { protect, authorize } from '../middlewares/auth.js';
 
-const router = Router();
+const router = express.Router();
 
-// Ruta para obtener la lista de salas
-router.get('/', protect, listarSalas);
+// =================================================================
+// RUTAS ACTUALIZADAS CON EL MIDDLEWARE 'authorize'
+// =================================================================
 
-// Ruta para crear una nueva sala (solo para admins)
-router.post('/', protect, admin, crearSala); 
+// 2. Rutas de LECTURA (GET): Permitidas para todos los roles logueados.
+router.get('/', 
+    protect, 
+    authorize('admin', 'asistente', 'empleado'), 
+    listarSalas
+);
 
-// Este archivo tiene solo UN export default.
+router.get('/:id', 
+    protect, 
+    authorize('admin', 'asistente', 'empleado'), 
+    getSalaById
+); 
+
+// 3. Rutas de ESCRITURA (POST, PUT, DELETE): Restringidas solo para el 'admin'.
+router.post('/', 
+    protect, 
+    authorize('admin'), 
+    crearSala
+);
+
+router.put('/:id', 
+    protect, 
+    authorize('admin'), 
+    actualizarSala
+);
+
+router.delete('/:id', 
+    protect, 
+    authorize('admin'), 
+    eliminarSala
+);
+
 export default router;
