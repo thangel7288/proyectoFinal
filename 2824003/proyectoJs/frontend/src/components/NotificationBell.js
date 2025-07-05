@@ -1,10 +1,10 @@
 import { notificacionService } from '../services/apiServices.js';
 
 export const NotificationBell = {
-  // Contenedor donde se renderizará la campana
   container: null,
+  // 1. Añadimos una propiedad para guardar el ID del temporizador
+  intervalId: null,
 
-  // Inicializa el componente
   async init(selector) {
     this.container = document.querySelector(selector);
     if (!this.container) return;
@@ -13,11 +13,21 @@ export const NotificationBell = {
     this.addEventListeners();
     await this.updateCount();
     
-    // Opcional: Actualizar el contador periódicamente
-    setInterval(() => this.updateCount(), 60000); // Cada 60 segundos
+    // 2. Guardamos el ID del temporizador cuando lo creamos
+    this.intervalId = setInterval(() => this.updateCount(), 60000);
+  },
+  
+  // 3. NUEVO MÉTODO para destruir el componente y limpiar el temporizador
+  destroy() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    if (this.container) {
+      this.container.innerHTML = ''; // Limpiamos el HTML para evitar fugas de memoria
+    }
   },
 
-  // Renderiza el HTML y CSS del componente
   render() {
     const styles = `
       .notification-bell { position: relative; }
@@ -31,7 +41,7 @@ export const NotificationBell = {
         padding: 2px 6px;
         font-size: 10px;
         font-weight: bold;
-        display: none; /* Oculto por defecto */
+        display: none;
       }
       .notifications-panel {
         display: none;
@@ -84,7 +94,6 @@ export const NotificationBell = {
     `;
   },
 
-  // Añade los event listeners para la interactividad
   addEventListeners() {
     const bellBtn = document.getElementById('bell-icon-btn');
     const panel = this.container.querySelector('.notifications-panel');
@@ -104,7 +113,6 @@ export const NotificationBell = {
         this.updateCount();
     });
 
-    // Cierra el panel si se hace clic fuera
     document.addEventListener('click', (e) => {
       if (this.container && !this.container.contains(e.target)) {
         panel.style.display = 'none';
@@ -112,9 +120,13 @@ export const NotificationBell = {
     });
   },
 
-  // Actualiza el contador de notificaciones no leídas
   async updateCount() {
     try {
+      // Añadimos una verificación para no hacer la llamada si no hay token
+      if (!localStorage.getItem('token')) {
+        this.destroy(); // Si no hay token, nos destruimos
+        return;
+      }
       const { unreadCount } = await notificacionService.getUnreadCount();
       const badge = this.container.querySelector('.notification-badge');
       if (unreadCount > 0) {
@@ -128,7 +140,6 @@ export const NotificationBell = {
     }
   },
 
-  // Carga y muestra la lista de notificaciones en el panel
   async loadNotifications() {
     try {
         const list = this.container.querySelector('.notifications-list');
