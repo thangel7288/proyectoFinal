@@ -1,0 +1,94 @@
+/* Contenedor principal para la página de salas, centrado */
+.salas-page-container {
+  max-width: 1200px;
+  margin: 0 auto; /* Centra el contenido horizontalmente */
+  padding: 1rem;
+}
+
+/* Cabecera de la página (título y botón de crear) */
+.salas-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.salas-page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+/* Rejilla para mostrar las tarjetas de las salas */
+.salas-grid {
+  display: grid;
+  /* Crea columnas flexibles que se adaptan al tamaño de la pantalla */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Estilo individual para cada tarjeta de sala */
+.sala-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.sala-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Cuerpo de la tarjeta con la información */
+.sala-card-body {
+  padding: 1.5rem;
+  flex-grow: 1; /* Permite que esta sección crezca para llenar el espacio */
+}
+
+.sala-card-body h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #2c3e50;
+  font-size: 1.25rem;
+}
+
+.sala-card-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.sala-card-details li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.sala-card-details svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.75rem;
+  stroke-width: 2;
+}
+
+/* Pie de la tarjeta con los botones de acción */
+.sala-card-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e0e0e0;
+}
+
+.sala-card-footer .btn {
+  flex-grow: 1; /* Hace que los botones ocupen el mismo espacio */
+  padding: 0.6rem 1rem;
+}

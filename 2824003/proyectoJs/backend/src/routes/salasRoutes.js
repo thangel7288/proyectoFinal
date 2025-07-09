@@ -1,50 +1,30 @@
 import express from 'express';
-import { 
-    listarSalas, 
-    getSalaById, 
-    crearSala, 
-    eliminarSala, 
-    actualizarSala 
-} from '../controllers/salasController.js'; 
-// 1. Importamos 'authorize' en lugar de 'isAdmin'
 import { protect, authorize } from '../middlewares/auth.js';
+
+// --- IMPORTACIÓN CORREGIDA ---
+// Importamos la nueva función 'desactivarSala' en lugar de 'eliminarSala'.
+import {
+  listarSalas,
+  getSalaById,
+  crearSala,
+  actualizarSala,
+  desactivarSala 
+} from '../controllers/salasController.js';
 
 const router = express.Router();
 
-// =================================================================
-// RUTAS ACTUALIZADAS CON EL MIDDLEWARE 'authorize'
-// =================================================================
+// --- Definición de Rutas ---
 
-// 2. Rutas de LECTURA (GET): Permitidas para todos los roles logueados.
-router.get('/', 
-    protect, 
-    authorize('admin', 'asistente', 'empleado'), 
-    listarSalas
-);
+// Rutas de LECTURA (GET): Permitidas para todos los roles logueados.
+router.get('/', protect, authorize('admin', 'asistente', 'empleado'), listarSalas);
+router.get('/:id', protect, authorize('admin', 'asistente', 'empleado'), getSalaById);
 
-router.get('/:id', 
-    protect, 
-    authorize('admin', 'asistente', 'empleado'), 
-    getSalaById
-); 
+// Rutas de ESCRITURA (POST, PUT): Restringidas solo para el 'admin'.
+router.post('/', protect, authorize('admin'), crearSala);
+router.put('/:id', protect, authorize('admin'), actualizarSala);
 
-// 3. Rutas de ESCRITURA (POST, PUT, DELETE): Restringidas solo para el 'admin'.
-router.post('/', 
-    protect, 
-    authorize('admin'), 
-    crearSala
-);
-
-router.put('/:id', 
-    protect, 
-    authorize('admin'), 
-    actualizarSala
-);
-
-router.delete('/:id', 
-    protect, 
-    authorize('admin'), 
-    eliminarSala
-);
+// --- RUTA DE ELIMINACIÓN ACTUALIZADA ---
+// Ahora, el método DELETE llama a la nueva función 'desactivarSala'.
+router.delete('/:id', protect, authorize('admin'), desactivarSala);
 
 export default router;

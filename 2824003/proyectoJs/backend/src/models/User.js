@@ -1,10 +1,7 @@
 import { pool } from '../config/database.js';
 
-// Usamos una clase para agrupar todas las funciones relacionadas con el modelo User
 export class User {
-
-  // --- NUEVA FUNCIÓN AÑADIDA ---
-  // Obtiene todos los usuarios y une la tabla de roles para obtener el nombre del rol
+  // --- OTRAS FUNCIONES CRUD (sin cambios) ---
   static async getAllWithRole() {
     const query = `
       SELECT u.id, u.nombre, u.apellido, u.email, u.activo, u.fecha_registro, r.nombre AS rol_nombre
@@ -14,17 +11,10 @@ export class User {
     const [rows] = await pool.query(query);
     return rows;
   }
-
-  // --- OTRAS FUNCIONES CRUD ---
-
-  // Encuentra un usuario por su ID
   static async findById(id) {
     const [rows] = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
     return rows[0];
   }
-
-  // --- FUNCIÓN CORREGIDA ---
-  // Ahora también obtiene el nombre del rol para usarlo en el JWT del login.
   static async findByEmail(email) {
     const query = `
       SELECT u.*, r.nombre AS rol
@@ -35,8 +25,6 @@ export class User {
     const [rows] = await pool.query(query, [email]);
     return rows[0];
   }
-
-  // Crea un nuevo usuario
   static async create(userData) {
     const { nombre, apellido, email, password_hash, rol_id } = userData;
     const [result] = await pool.query(
@@ -45,8 +33,6 @@ export class User {
     );
     return { id: result.insertId, ...userData };
   }
-
-  // Actualiza un usuario por su ID
   static async updateById(id, userData) {
     const { nombre, apellido, email, rol_id } = userData;
     const [result] = await pool.query(
@@ -55,10 +41,36 @@ export class User {
     );
     return result.affectedRows;
   }
-
-  // Elimina un usuario por su ID
   static async deleteById(id) {
     const [result] = await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
     return result.affectedRows;
+  }
+
+  // --- NUEVO MÉTODO AÑADIDO ---
+  /**
+   * Verifica si un usuario tiene registros asociados en otras tablas.
+   * @param {number} userId - El ID del usuario a verificar.
+   * @returns {boolean} - Devuelve true si encuentra alguna dependencia, false si no.
+   */
+  static async tieneDependencias(userId) {
+    // Lista de tablas y columnas que dependen de 'usuarios.id'
+    const dependencias = [
+      { tabla: 'reservas', columna: 'usuario_id' },
+      { tabla: 'mantenimientos', columna: 'creado_por_usuario_id' },
+      { tabla: 'notificaciones', columna: 'usuario_id' }
+    ];
+
+    for (const dep of dependencias) {
+      const query = `SELECT id FROM ${dep.tabla} WHERE ${dep.columna} = ? LIMIT 1`;
+      const [rows] = await pool.query(query, [userId]);
+      if (rows.length > 0) {
+        // Si encontramos al menos un registro en cualquiera de las tablas, paramos y devolvemos true.
+        console.log(`[DEBUG] Dependencia encontrada para usuario ${userId} en tabla ${dep.tabla}`);
+        return true; 
+      }
+    }
+
+    // Si el bucle termina sin encontrar nada, no hay dependencias.
+    return false;
   }
 }

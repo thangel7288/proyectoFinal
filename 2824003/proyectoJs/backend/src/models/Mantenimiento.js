@@ -5,12 +5,12 @@ export class Mantenimiento {
   /**
    * Verifica si ya existe una reserva o un mantenimiento para una sala en un intervalo de tiempo.
    * @param {number} sala_id - El ID de la sala a verificar.
-   * @param {string} fecha_inicio - La fecha y hora de inicio del nuevo mantenimiento.
-   * @param {string} fecha_fin - La fecha y hora de fin del nuevo mantenimiento.
+   * @param {string} fecha_inicio - La fecha y hora de inicio del nuevo evento.
+   * @param {string} fecha_fin - La fecha y hora de fin del nuevo evento.
    * @returns {boolean} - Devuelve true si hay conflicto, false si no lo hay.
    */
   static async verificarConflictos(sala_id, fecha_inicio, fecha_fin) {
-    // Consulta para verificar conflictos con RESERVAS existentes
+    // Consulta para verificar conflictos con RESERVAS existentes y confirmadas
     const conflictoReservasQuery = `
       SELECT id FROM reservas
       WHERE sala_id = ?
@@ -31,11 +31,8 @@ export class Mantenimiento {
     return reservasEnConflicto.length > 0 || mantenimientosEnConflicto.length > 0;
   }
 
-  /**
-   * Crea un nuevo mantenimiento en la base de datos.
-   * @param {object} mantenimientoData - Los datos del mantenimiento.
-   * @returns {object} - El objeto del mantenimiento creado.
-   */
+  // --- OTRAS FUNCIONES (create, findAll, deleteById) ---
+
   static async create(mantenimientoData) {
     const { sala_id, motivo, fecha_inicio, fecha_fin, creado_por_usuario_id } = mantenimientoData;
     const [result] = await pool.query(
@@ -45,10 +42,6 @@ export class Mantenimiento {
     return { id: result.insertId, ...mantenimientoData };
   }
 
-  /**
-   * Obtiene todos los mantenimientos programados, uniendo el nombre de la sala.
-   * @returns {Array} - Una lista de todos los mantenimientos.
-   */
   static async findAll() {
     const query = `
       SELECT 
@@ -62,11 +55,6 @@ export class Mantenimiento {
     return rows;
   }
 
-  /**
-   * Elimina un mantenimiento por su ID.
-   * @param {number} id - El ID del mantenimiento a eliminar.
-   * @returns {number} - El número de filas afectadas.
-   */
   static async deleteById(id) {
     const [result] = await pool.query('DELETE FROM mantenimientos WHERE id = ?', [id]);
     return result.affectedRows;

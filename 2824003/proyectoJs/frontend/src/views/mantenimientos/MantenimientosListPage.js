@@ -2,62 +2,46 @@ import { mantenimientoService, authService } from '../../services/apiServices.js
 import { router } from '../../router/index.js';
 import Swal from 'sweetalert2';
 
-export const MantenimientosListPage = (app) => {
+/**
+ * Componente de página que renderiza la lista de mantenimientos en una tabla.
+ * @param {HTMLElement} container - El elemento donde se inyectará el contenido.
+ */
+export const MantenimientosListPage = (container) => {
   const currentUser = authService.getCurrentUser();
   if (!currentUser || currentUser.rol !== 'admin') {
     router.navigate('/salas');
     return;
   }
 
-  app.innerHTML = `
-    <div class="main-container mantenimientos-container">
-      <h2>Gestión de Mantenimientos</h2>
-      <p>Programa o revisa los períodos de mantenimiento de las salas.</p>
-      <nav class="main-actions">
-        <button data-navigate="/dashboard">Dashboard</button>
-        <button data-navigate="/salas">Salas</button>
-        <button data-navigate="/reservas">Reservas</button>
-        <button data-navigate="/usuarios">Usuarios</button>
-        <button data-navigate="/mantenimientos" class="active">Mantenimientos</button>
-      </nav>
-      <hr>
-      <div class="page-actions">
-        <button id="crear-mantenimiento-btn" class="btn-primary">Programar Nuevo Mantenimiento</button>
+  container.innerHTML = `
+    <div class="mantenimientos-page-container">
+      <div class="mantenimientos-page-header">
+        <h1>Gestión de Mantenimientos</h1>
+        <button id="crear-mantenimiento-btn" class="btn btn-primary">Programar Mantenimiento</button>
       </div>
-      <h3>Mantenimientos Programados</h3>
-      <div id="mantenimientos-list"><p>Cargando mantenimientos...</p></div>
+      <div id="mantenimientos-list-content" class="content-area">
+        <p>Cargando mantenimientos...</p>
+      </div>
     </div>
   `;
 
-  // --- Lógica de Eventos ---
-  document.querySelector('.main-actions').addEventListener('click', (e) => {
-    if (e.target.matches('[data-navigate]')) {
-      router.navigate(e.target.dataset.navigate);
-    }
-  });
+  const mantenimientosListContent = document.getElementById('mantenimientos-list-content');
+  document.getElementById('crear-mantenimiento-btn').addEventListener('click', () => router.navigate('/mantenimientos/crear'));
 
-  document.getElementById('crear-mantenimiento-btn').addEventListener('click', () => {
-    router.navigate('/mantenimientos/crear');
-  });
-
-  const mantenimientosListDiv = document.getElementById('mantenimientos-list');
-  mantenimientosListDiv.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('btn-delete')) {
-      const mantenimientoElement = e.target.closest('li');
-      const mantenimientoId = mantenimientoElement.dataset.id;
+  mantenimientosListContent.addEventListener('click', async (e) => {
+    if (e.target.matches('.btn-delete')) {
+      const row = e.target.closest('tr');
+      const mantenimientoId = row.dataset.id;
 
       const result = await Swal.fire({
-        title: '¿Estás seguro?',
-        text: "Esta acción eliminará el mantenimiento programado.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, ¡elimínalo!'
+        title: '¿Estás seguro?', text: "Esta acción eliminará el mantenimiento programado.", icon: 'warning',
+        showCancelButton: true, confirmButtonText: 'Sí, ¡elimínalo!'
       });
 
       if (result.isConfirmed) {
         try {
           await mantenimientoService.deleteById(mantenimientoId);
-          mantenimientoElement.remove();
+          row.remove();
           Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mantenimiento eliminado', showConfirmButton: false, timer: 2000 });
         } catch (error) {
           Swal.fire('Error', error.message, 'error');
@@ -66,32 +50,38 @@ export const MantenimientosListPage = (app) => {
     }
   });
 
-  // --- Función para Cargar y Mostrar los Mantenimientos ---
   const loadMantenimientos = async () => {
     try {
       const mantenimientos = await mantenimientoService.getAll();
-      if (mantenimientos.length === 0) {
-        mantenimientosListDiv.innerHTML = '<p>No hay mantenimientos programados.</p>';
+      if (!mantenimientos || mantenimientos.length === 0) {
+        mantenimientosListContent.innerHTML = '<p>No hay mantenimientos programados.</p>';
         return;
       }
-      mantenimientosListDiv.innerHTML = `
-        <ul class="lista-items">
-          ${mantenimientos.map(mantenimiento => `
-            <li data-id="${mantenimiento.id}">
-              <div class="item-info">
-                <strong>Sala: ${mantenimiento.sala_nombre}</strong>
-                <span>Motivo: ${mantenimiento.motivo}</span>
-                <small>
-                  Del: ${new Date(mantenimiento.fecha_inicio).toLocaleString()} 
-                  Al: ${new Date(mantenimiento.fecha_fin).toLocaleString()}
-                </small>
-              </div>
-              <div class="item-actions">
-                <button class="btn-delete">Eliminar</button>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
+      mantenimientosListContent.innerHTML = `
+        <table class="mantenimientos-table">
+          <thead>
+            <tr>
+              <th>Sala</th>
+              <th>Motivo</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${mantenimientos.map(mantenimiento => `
+              <tr data-id="${mantenimiento.id}">
+                <td>${mantenimiento.sala_nombre}</td>
+                <td>${mantenimiento.motivo}</td>
+                <td>${new Date(mantenimiento.fecha_inicio).toLocaleString()}</td>
+                <td>${new Date(mantenimiento.fecha_fin).toLocaleString()}</td>
+                <td>
+                  <button class="btn btn-danger btn-delete">Eliminar</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       `;
     } catch (error) {
       Swal.fire('Error', 'No se pudieron cargar los mantenimientos. ' + error.message, 'error');

@@ -1,11 +1,11 @@
 import { Reserva } from '../models/Reserva.js';
 import { Mantenimiento } from '../models/Mantenimiento.js';
-// 1. Importamos el modelo de Notificacion
 import { Notificacion } from '../models/Notificacion.js';
+import { Sala } from '../models/Sala.js';
 
 /**
  * Crea una nueva reserva.
- * (Esta función no necesita cambios)
+ * Verifica conflictos con otras reservas Y con mantenimientos.
  */
 export const crearReserva = async (req, res, next) => {
   try {
@@ -19,12 +19,28 @@ export const crearReserva = async (req, res, next) => {
       return res.status(400).json({ message: 'La fecha de fin debe ser posterior a la fecha de inicio.' });
     }
 
+    // --- VERIFICACIÓN CLAVE ---
+    // Usamos la función del modelo de Mantenimiento que ya es lo suficientemente
+    // inteligente como para buscar conflictos en AMBAS tablas (reservas y mantenimientos).
     const hayConflicto = await Mantenimiento.verificarConflictos(sala_id, fecha_inicio, fecha_fin);
     if (hayConflicto) {
-      return res.status(409).json({ message: 'Conflicto de horario. La sala no está disponible en ese intervalo de tiempo (puede estar reservada o en mantenimiento).' });
+      return res.status(409).json({ message: 'Conflicto de horario. La sala no está disponible en ese intervalo (puede estar reservada o en mantenimiento).' });
     }
 
+    // Si no hay conflictos, se procede a crear la reserva.
     const nuevaReserva = await Reserva.create({ motivo, sala_id, usuario_id, fecha_inicio, fecha_fin });
+    
+    // Notificamos al usuario que su reserva fue exitosa.
+    const sala = await Sala.findById(sala_id);
+    if (sala) {
+      await Notificacion.create({
+        usuario_id: usuario_id,
+        mensaje: `Tu reserva para la sala "${sala.nombre}" ha sido confirmada.`,
+        tipo: 'info_general',
+        reserva_id: nuevaReserva.id
+      });
+    }
+
     res.status(201).json({ message: 'Reserva creada exitosamente', reserva: nuevaReserva });
 
   } catch (error) {
@@ -33,15 +49,12 @@ export const crearReserva = async (req, res, next) => {
   }
 };
 
-/**
- * Lista las reservas.
- * (Esta función no necesita cambios)
- */
+// --- OTRAS FUNCIONES (listarReservas, cancelarReserva) ---
+
 export const listarReservas = async (req, res, next) => {
   try {
     const { id: userId, rol } = req.user;
     let reservas;
-
     if (rol === 'admin' || rol === 'asistente') {
       reservas = await Reserva.findAll();
     } else {
@@ -54,41 +67,30 @@ export const listarReservas = async (req, res, next) => {
   }
 };
 
-/**
- * Cancela una reserva y notifica al usuario si es necesario.
- */
 export const cancelarReserva = async (req, res, next) => {
   try {
     const { id: reservaId } = req.params;
     const { id: userId, rol } = req.user;
-
     const reserva = await Reserva.findById(reservaId);
     if (!reserva) {
       return res.status(404).json({ message: 'Reserva no encontrada.' });
     }
-    
-    // --- LÓGICA DE NOTIFICACIÓN AÑADIDA ---
-    // 2. Verificamos si el que cancela no es el dueño de la reserva
     const esAdminOAsistenteCancelando = (rol === 'admin' || rol === 'asistente') && reserva.usuario_id !== userId;
-
     if (esAdminOAsistenteCancelando) {
-      // Si un admin/asistente cancela la reserva de otro, generamos una notificación
+      const sala = await Sala.findById(reserva.sala_id);
       await Notificacion.create({
-        usuario_id: reserva.usuario_id, // La notificación es para el dueño original
-        mensaje: `Tu reserva para la sala ha sido cancelada por un administrador.`,
+        usuario_id: reserva.usuario_id,
+        mensaje: `Tu reserva para la sala "${sala ? sala.nombre : ''}" ha sido cancelada por un administrador.`,
         tipo: 'reserva_cancelada',
         reserva_id: reserva.id
       });
     }
-
-    // 3. Verificamos permisos para cancelar (sin cambios en esta lógica)
     if (rol === 'admin' || rol === 'asistente' || reserva.usuario_id === userId) {
       await Reserva.cancelById(reservaId);
       res.status(200).json({ message: 'Reserva cancelada exitosamente.' });
     } else {
       return res.status(403).json({ message: 'No tienes permiso para cancelar esta reserva.' });
     }
-
   } catch (error) {
     console.error("Error en cancelarReserva:", error);
     next(error);

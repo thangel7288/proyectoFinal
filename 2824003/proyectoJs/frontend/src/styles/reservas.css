@@ -1,0 +1,73 @@
+.reservas-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Cabecera de la página */
+.reservas-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.reservas-page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+/* Estilo para la tabla de reservas */
+.reservas-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  overflow: hidden; /* Para que el border-radius se aplique a las esquinas de la tabla */
+}
+
+.reservas-table th,
+.reservas-table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.reservas-table thead th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.reservas-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reservas-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Estilos para las "píldoras" de estado */
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.status-confirmada {
+  background-color: #d1fae5; /* Verde claro */
+  color: #065f46; /* Verde oscuro */
+}
+
+.status-cancelada {
+  background-color: #fee2e2; /* Rojo claro */
+  color: #991b1b; /* Rojo oscuro */
+}

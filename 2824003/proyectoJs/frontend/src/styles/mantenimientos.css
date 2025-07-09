@@ -1,0 +1,55 @@
+.mantenimientos-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Cabecera de la página */
+.mantenimientos-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.mantenimientos-page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+/* Estilo para la tabla de mantenimientos */
+.mantenimientos-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+.mantenimientos-table th,
+.mantenimientos-table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+
+.mantenimientos-table thead th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.mantenimientos-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mantenimientos-table tbody tr:hover {
+  background-color: #f9fafb;
+}
