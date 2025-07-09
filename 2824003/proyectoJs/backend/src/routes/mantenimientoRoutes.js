@@ -11,25 +11,13 @@ const router = express.Router();
 // Todas las rutas de mantenimientos requieren que el usuario sea administrador.
 router.use(protect, authorize('admin'));
 
-/**
- * @route   GET /api/mantenimientos
- * @desc    Obtener todos los mantenimientos programados.
- * @access  Private (solo para admin)
- */
+// GET /api/mantenimientos -> Llama a la función para LISTAR
 router.get('/', listarMantenimientos);
 
-/**
- * @route   POST /api/mantenimientos
- * @desc    Programar un nuevo mantenimiento.
- * @access  Private (solo para admin)
- */
+// POST /api/mantenimientos -> Llama a la función para CREAR
 router.post('/', crearMantenimiento);
 
-/**
- * @route   DELETE /api/mantenimientos/:id
- * @desc    Eliminar un mantenimiento programado.
- * @access  Private (solo para admin)
- */
+// DELETE /api/mantenimientos/:id -> Llama a la función para ELIMINAR
 router.delete('/:id', eliminarMantenimiento);
 
 export default router;

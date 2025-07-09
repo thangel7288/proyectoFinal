@@ -20,14 +20,11 @@ export const crearReserva = async (req, res, next) => {
     }
 
     // --- VERIFICACIÓN CLAVE ---
-    // Usamos la función del modelo de Mantenimiento que ya es lo suficientemente
-    // inteligente como para buscar conflictos en AMBAS tablas (reservas y mantenimientos).
     const hayConflicto = await Mantenimiento.verificarConflictos(sala_id, fecha_inicio, fecha_fin);
     if (hayConflicto) {
       return res.status(409).json({ message: 'Conflicto de horario. La sala no está disponible en ese intervalo (puede estar reservada o en mantenimiento).' });
     }
 
-    // Si no hay conflictos, se procede a crear la reserva.
     const nuevaReserva = await Reserva.create({ motivo, sala_id, usuario_id, fecha_inicio, fecha_fin });
     
     // Notificamos al usuario que su reserva fue exitosa.
@@ -49,8 +46,11 @@ export const crearReserva = async (req, res, next) => {
   }
 };
 
-// --- OTRAS FUNCIONES (listarReservas, cancelarReserva) ---
-
+/**
+ * Lista las reservas.
+ * Si el rol es admin o asistente, lista todas.
+ * Si el rol es empleado, lista solo las propias.
+ */
 export const listarReservas = async (req, res, next) => {
   try {
     const { id: userId, rol } = req.user;
@@ -67,6 +67,9 @@ export const listarReservas = async (req, res, next) => {
   }
 };
 
+/**
+ * Cancela una reserva y notifica al usuario si es necesario.
+ */
 export const cancelarReserva = async (req, res, next) => {
   try {
     const { id: reservaId } = req.params;

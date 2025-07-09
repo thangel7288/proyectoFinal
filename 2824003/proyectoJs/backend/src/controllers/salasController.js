@@ -1,9 +1,7 @@
 import { Sala } from '../models/Sala.js';
 import { Auditoria } from '../models/Auditoria.js';
 
-/**
- * Lista todas las salas activas.
- */
+// --- OTRAS FUNCIONES (listarSalas, crearSala, etc. sin cambios) ---
 export const listarSalas = async (req, res, next) => {
   try {
     const salas = await Sala.getAll();
@@ -13,65 +11,36 @@ export const listarSalas = async (req, res, next) => {
     next(error);
   }
 };
-
-/**
- * Crea una nueva sala.
- */
 export const crearSala = async (req, res, next) => {
   try {
     const { nombre, capacidad, ubicacion, equipamiento } = req.body;
-    if (!nombre || !capacidad) {
-      return res.status(400).json({ mensaje: "Nombre y capacidad son obligatorios." });
-    }
+    if (!nombre || !capacidad) { return res.status(400).json({ mensaje: "Nombre y capacidad son obligatorios." }); }
+    if (parseInt(capacidad, 10) <= 0) { return res.status(400).json({ message: "La capacidad debe ser un número positivo mayor que cero." }); }
     const nuevaSala = await Sala.create({ nombre, capacidad, ubicacion, equipamiento });
     res.status(201).json({ mensaje: "Sala creada con éxito", sala: nuevaSala });
-  } catch (error) {
-    console.error("Error en crearSala:", error);
-    next(error);
-  }
+  } catch (error) { console.error("Error en crearSala:", error); next(error); }
 };
-
-/**
- * Actualiza una sala existente.
- */
 export const actualizarSala = async (req, res, next) => {
   try {
     const { id } = req.params;
     const salaData = req.body;
-    if (!salaData.nombre || !salaData.capacidad) {
-      return res.status(400).json({ message: 'Nombre y capacidad son obligatorios.' });
-    }
+    if (!salaData.nombre || !salaData.capacidad) { return res.status(400).json({ message: 'Nombre y capacidad son obligatorios.' }); }
+    if (parseInt(salaData.capacidad, 10) <= 0) { return res.status(400).json({ message: "La capacidad debe ser un número positivo mayor que cero." }); }
     const resultado = await Sala.updateById(id, salaData);
-    if (resultado === 0) {
-      return res.status(404).json({ message: 'Sala no encontrada.' });
-    }
+    if (resultado === 0) { return res.status(404).json({ message: 'Sala no encontrada.' }); }
     res.status(200).json({ message: 'Sala actualizada exitosamente.' });
-  } catch (error) {
-    console.error("Error en actualizarSala:", error);
-    next(error);
-  }
+  } catch (error) { console.error("Error en actualizarSala:", error); next(error); }
 };
-
-/**
- * Obtiene los detalles de una sala específica.
- */
 export const getSalaById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const sala = await Sala.findById(id);
-    if (!sala) {
-      return res.status(404).json({ message: 'Sala no encontrada.' });
-    }
+    if (!sala) { return res.status(404).json({ message: 'Sala no encontrada.' }); }
     res.json(sala);
-  } catch (error) {
-    console.error("Error en getSalaById:", error);
-    next(error);
-  }
+  } catch (error) { console.error("Error en getSalaById:", error); next(error); }
 };
 
-/**
- * Desactiva una sala (soft delete) si no tiene reservas activas.
- */
+// --- FUNCIÓN 'desactivarSala' ACTUALIZADA ---
 export const desactivarSala = async (req, res, next) => {
   try {
     const { id: salaId } = req.params;
@@ -83,16 +52,22 @@ export const desactivarSala = async (req, res, next) => {
       return res.status(409).json({ message: 'No se puede archivar la sala porque tiene reservas activas. Por favor, cancele las reservas primero.' });
     }
 
-    // 2. Obtenemos el nombre de la sala ANTES de desactivarla para usarlo en el log.
+    // 2. NUEVA VERIFICACIÓN: Verificamos si la sala tiene mantenimientos programados.
+    const tieneMantenimientos = await Sala.tieneMantenimientos(salaId);
+    if (tieneMantenimientos) {
+      return res.status(409).json({ message: 'No se puede archivar la sala porque tiene mantenimientos programados. Por favor, elimine los mantenimientos primero.' });
+    }
+
+    // 3. Obtenemos el nombre de la sala ANTES de desactivarla para usarlo en el log.
     const sala = await Sala.findById(salaId);
     if (!sala) {
       return res.status(404).json({ message: 'Sala no encontrada.' });
     }
 
-    // 3. Desactivamos la sala.
+    // 4. Desactivamos la sala.
     await Sala.desactivarById(salaId);
 
-    // 4. Registramos la acción en la tabla de auditoría.
+    // 5. Registramos la acción en la tabla de auditoría.
     await Auditoria.create({
       usuario_id: adminId,
       accion: `La sala '${sala.nombre}' ha sido archivada.`

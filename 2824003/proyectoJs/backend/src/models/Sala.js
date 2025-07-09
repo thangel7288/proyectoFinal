@@ -57,4 +57,16 @@ export class Sala {
     const [rows] = await pool.query(query, [salaId]);
     return rows.length > 0;
   }
+
+  // --- NUEVO MÉTODO AÑADIDO ---
+  /**
+   * Verifica si una sala tiene mantenimientos programados.
+   * @param {number} salaId - El ID de la sala.
+   * @returns {boolean} - Devuelve true si tiene mantenimientos, false si no.
+   */
+  static async tieneMantenimientos(salaId) {
+    const query = "SELECT id FROM mantenimientos WHERE sala_id = ? LIMIT 1";
+    const [rows] = await pool.query(query, [salaId]);
+    return rows.length > 0;
+  }
 }

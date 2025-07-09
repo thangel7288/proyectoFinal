@@ -1,99 +1,117 @@
-// frontend/src/views/salas/SalaCreatePage.js
-
-import Swal from 'sweetalert2';
-import { router } from '../../router/index.js';
 import { salaService } from '../../services/apiServices.js';
-import { isNotEmpty } from '../../helpers/validationHelpers.js';
+import { router } from '../../router/index.js';
+import Swal from 'sweetalert2';
 
-export const SalaCreatePage = (app) => {
-  // El HTML del formulario que ya tenías
-  app.innerHTML = `
-    <div class="form-container">
-      <h2>Crear Nueva Sala</h2>
-      <form id="create-sala-form" class="sala-form">
-        <div class="form-group">
-          <label for="nombre">Nombre de la Sala:</label>
-          <input type="text" id="nombre" placeholder="Ej: Sala de Juntas VIP">
-        </div>
-        <div class="form-group">
-          <label for="capacidad">Capacidad:</label>
-          <input type="number" id="capacidad" placeholder="Ej: 12">
-        </div>
-        <div class="form-group">
-          <label for="ubicacion">Ubicación:</label>
-          <input type="text" id="ubicacion" placeholder="Ej: Piso 3, Ala Norte">
-        </div>
-        <div class="form-actions">
-            <button type="submit" class="btn-primary">Guardar Sala</button>
-            <button type="button" id="cancel-btn" class="btn-secondary">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  `;
+/**
+ * Componente de página para crear una nueva sala, construido con JavaScript puro para mayor robustez.
+ * @param {HTMLElement} container - El elemento donde se inyectará el contenido.
+ */
+export const SalaCreatePage = (container) => {
+  // 1. Limpiamos el contenedor para asegurarnos de que no haya contenido antiguo.
+  container.innerHTML = '';
 
-  // --- AHORA AÑADIMOS TODA LA LÓGICA ---
+  // 2. Creamos los elementos del DOM uno por uno.
+  const formWrapper = document.createElement('div');
+  formWrapper.className = 'form-view-container';
 
-  // 1. Obtenemos referencias a los elementos del DOM
-  const form = document.getElementById('create-sala-form');
-  const nombreInput = document.getElementById('nombre');
-  const capacidadInput = document.getElementById('capacidad');
-  const ubicacionInput = document.getElementById('ubicacion');
-  const cancelBtn = document.getElementById('cancel-btn');
+  const title = document.createElement('h2');
+  title.textContent = 'Crear Nueva Sala';
 
-  // 2. Lógica para el botón de Cancelar
-  cancelBtn.addEventListener('click', () => {
-    // Simplemente nos devuelve a la lista de salas
-    router.navigate('/salas');
+  const form = document.createElement('form');
+  form.id = 'create-sala-form';
+  form.noValidate = true;
+
+  // --- Helper para crear campos de formulario de forma consistente ---
+  const createFormGroup = (labelText, inputType, inputId, options = {}) => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.htmlFor = inputId;
+    label.textContent = labelText;
+
+    let input;
+    if (inputType === 'textarea') {
+      input = document.createElement('textarea');
+      input.rows = options.rows || 3;
+    } else {
+      input = document.createElement('input');
+      input.type = inputType;
+    }
+
+    input.id = inputId;
+    input.name = inputId; // El 'name' debe coincidir con el 'id' para FormData
+    input.className = 'form-control';
+    if (options.required) input.required = true;
+    if (options.min) input.min = options.min;
+    if (options.placeholder) input.placeholder = options.placeholder;
+
+    group.appendChild(label);
+    group.appendChild(input);
+    return group;
+  };
+
+  // --- Creamos y añadimos cada campo al formulario ---
+  form.appendChild(createFormGroup('Nombre de la Sala:', 'text', 'nombre', { required: true }));
+  form.appendChild(createFormGroup('Capacidad:', 'number', 'capacidad', { required: true, min: '1', placeholder: 'Ej: 10' }));
+  form.appendChild(createFormGroup('Ubicación:', 'text', 'ubicacion', { required: true, placeholder: 'Ej: Piso 3, Ala Norte' }));
+  
+
+  // --- Creamos y añadimos los botones de acción ---
+  const formActions = document.createElement('div');
+  formActions.className = 'form-actions';
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'btn btn-secondary';
+  cancelButton.textContent = 'Cancelar';
+
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.className = 'btn btn-primary';
+  submitButton.textContent = 'Guardar Sala';
+
+  formActions.appendChild(cancelButton);
+  formActions.appendChild(submitButton);
+  form.appendChild(formActions);
+
+  // 3. Ensamblamos la estructura final y la añadimos al contenedor de la página.
+  formWrapper.appendChild(title);
+  formWrapper.appendChild(form);
+  container.appendChild(formWrapper);
+
+  // --- Lógica del formulario (sin cambios) ---
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    const formData = new FormData(form);
+    const salaData = Object.fromEntries(formData.entries());
+    try {
+      if (salaData.equipamiento) {
+        salaData.equipamiento = JSON.parse(salaData.equipamiento);
+      } else {
+        delete salaData.equipamiento;
+      }
+    } catch (error) {
+      Swal.fire('Error de Formato', 'El campo de equipamiento no es un JSON válido.', 'error');
+      return;
+    }
+    try {
+      await salaService.create(salaData);
+      Swal.fire({
+        title: '¡Éxito!', text: 'La sala ha sido creada correctamente.', icon: 'success',
+        timer: 2000, showConfirmButton: false
+      });
+      router.navigate('/salas');
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo crear la sala. ' + error.message, 'error');
+    }
   });
 
-  // 3. Lógica para cuando se envía el formulario
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Evitamos que la página se recargue
-
-    // Obtenemos los valores de los inputs
-    const nombre = nombreInput.value;
-    const capacidad = capacidadInput.value;
-    const ubicacion = ubicacionInput.value;
-
-    // Validamos los campos usando nuestro helper
-    if (!isNotEmpty(nombre) || !isNotEmpty(capacidad) || !isNotEmpty(ubicacion)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos Incompletos',
-        text: 'Por favor, llena todos los campos para crear la sala.'
-      });
-      return; // Detenemos el proceso
-    }
-
-    // Creamos el objeto con los datos de la sala
-    const salaData = {
-      nombre,
-      capacidad: parseInt(capacidad, 10), // Convertimos la capacidad a número
-      ubicacion
-    };
-
-    // Usamos un try/catch para llamar al servicio
-    try {
-      // Llamamos a la función 'create' que ya habíamos añadido en apiServices.js
-      await salaService.create(salaData);
-      
-      // Si todo sale bien, mostramos alerta de éxito
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Sala Creada!',
-        text: 'La nueva sala ha sido registrada exitosamente.'
-      });
-      
-      // Y redirigimos al usuario a la lista de salas
-      router.navigate('/salas');
-
-    } catch (error) {
-      // Si algo falla, mostramos una alerta de error
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al crear la sala',
-        text: error.message
-      });
-    }
+  cancelButton.addEventListener('click', () => {
+    router.navigate('/salas');
   });
 };

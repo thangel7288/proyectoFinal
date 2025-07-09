@@ -65,7 +65,6 @@ export class User {
       const [rows] = await pool.query(query, [userId]);
       if (rows.length > 0) {
         // Si encontramos al menos un registro en cualquiera de las tablas, paramos y devolvemos true.
-        console.log(`[DEBUG] Dependencia encontrada para usuario ${userId} en tabla ${dep.tabla}`);
         return true; 
       }
     }

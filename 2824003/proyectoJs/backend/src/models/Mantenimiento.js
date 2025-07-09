@@ -4,35 +4,28 @@ export class Mantenimiento {
 
   /**
    * Verifica si ya existe una reserva o un mantenimiento para una sala en un intervalo de tiempo.
-   * @param {number} sala_id - El ID de la sala a verificar.
-   * @param {string} fecha_inicio - La fecha y hora de inicio del nuevo evento.
-   * @param {string} fecha_fin - La fecha y hora de fin del nuevo evento.
-   * @returns {boolean} - Devuelve true si hay conflicto, false si no lo hay.
    */
   static async verificarConflictos(sala_id, fecha_inicio, fecha_fin) {
-    // Consulta para verificar conflictos con RESERVAS existentes y confirmadas
     const conflictoReservasQuery = `
       SELECT id FROM reservas
-      WHERE sala_id = ?
-      AND estado = 'confirmada'
-      AND (fecha_inicio < ? AND fecha_fin > ?)
+      WHERE sala_id = ? AND estado = 'confirmada' AND (fecha_inicio < ? AND fecha_fin > ?)
     `;
     const [reservasEnConflicto] = await pool.query(conflictoReservasQuery, [sala_id, fecha_fin, fecha_inicio]);
 
-    // Consulta para verificar conflictos con OTROS MANTENIMIENTOS existentes
+    if (reservasEnConflicto.length > 0) return true;
+
     const conflictoMantenimientosQuery = `
       SELECT id FROM mantenimientos
-      WHERE sala_id = ?
-      AND (fecha_inicio < ? AND fecha_fin > ?)
+      WHERE sala_id = ? AND (fecha_inicio < ? AND fecha_fin > ?)
     `;
     const [mantenimientosEnConflicto] = await pool.query(conflictoMantenimientosQuery, [sala_id, fecha_fin, fecha_inicio]);
 
-    // Si encontramos algún resultado en cualquiera de las dos consultas, hay un conflicto.
-    return reservasEnConflicto.length > 0 || mantenimientosEnConflicto.length > 0;
+    return mantenimientosEnConflicto.length > 0;
   }
 
-  // --- OTRAS FUNCIONES (create, findAll, deleteById) ---
-
+  /**
+   * Crea un nuevo mantenimiento.
+   */
   static async create(mantenimientoData) {
     const { sala_id, motivo, fecha_inicio, fecha_fin, creado_por_usuario_id } = mantenimientoData;
     const [result] = await pool.query(
@@ -42,6 +35,9 @@ export class Mantenimiento {
     return { id: result.insertId, ...mantenimientoData };
   }
 
+  /**
+   * Obtiene todos los mantenimientos programados.
+   */
   static async findAll() {
     const query = `
       SELECT 
@@ -55,6 +51,9 @@ export class Mantenimiento {
     return rows;
   }
 
+  /**
+   * Elimina un mantenimiento por su ID.
+   */
   static async deleteById(id) {
     const [result] = await pool.query('DELETE FROM mantenimientos WHERE id = ?', [id]);
     return result.affectedRows;
