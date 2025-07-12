@@ -1,95 +1,91 @@
-import { userService, authService } from '../../services/apiServices.js';
+import { userService } from '../../services/apiServices.js';
 import { router } from '../../router/index.js';
 import Swal from 'sweetalert2';
 
-export const UserEditPage = (app, userId) => {
-  const currentUser = authService.getCurrentUser();
-  if (!currentUser || currentUser.rol !== 'admin') {
-    router.navigate('/salas');
-    return;
-  }
+export const UserEditPage = (container, userId) => {
+    container.innerHTML = `<div class="form-view-container"><p>Cargando datos del usuario...</p></div>`;
 
-  // Pre-carga un HTML básico mientras se obtienen los datos
-  app.innerHTML = `
-    <div class="main-container form-container">
-      <h2>Editar Usuario</h2>
-      <p>Cargando datos del usuario...</p>
-    </div>
-  `;
+    const init = async () => {
+        try {
+            // Obtenemos los datos del usuario específico
+            const user = await userService.getById(userId);
+            
+            // Renderizamos el formulario con los datos cargados
+            renderForm(user);
+        } catch (error) {
+            Swal.fire('Error', 'No se pudieron cargar los datos del usuario.', 'error');
+            router.navigate('/usuarios');
+        }
+    };
 
-  const loadUserData = async () => {
-    try {
-      const user = await userService.getById(userId);
-
-      // Una vez que tenemos los datos, renderizamos el formulario completo
-      app.innerHTML = `
-        <div class="main-container form-container">
-          <h2>Editar Usuario</h2>
-          <form id="edit-user-form">
-            <div class="form-group">
-              <label for="nombre">Nombre:</label>
-              <input type="text" id="nombre" name="nombre" value="${user.nombre}" required>
+    const renderForm = (user) => {
+        container.innerHTML = `
+            <div class="form-view-container">
+                <h2>Editando Usuario: ${user.nombre} ${user.apellido}</h2>
+                <form id="edit-user-form" novalidate>
+                    <div class="form-group">
+                        <label for="nombre">Nombre:</label>
+                        <input type="text" id="nombre" name="nombre" class="form-control" value="${user.nombre || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="apellido">Apellido:</label>
+                        <input type="text" id="apellido" name="apellido" class="form-control" value="${user.apellido || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" class="form-control" value="${user.email || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="rol_id">Rol:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="rol_id" name="rol_id" class="form-control">
+                                <option value="1" ${user.rol_id === 1 ? 'selected' : ''}>Admin</option>
+                                <option value="2" ${user.rol_id === 2 ? 'selected' : ''}>Empleado</option>
+                                <option value="3" ${user.rol_id === 3 ? 'selected' : ''}>Asistente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-btn" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-              <label for="apellido">Apellido:</label>
-              <input type="text" id="apellido" name="apellido" value="${user.apellido}" required>
-            </div>
-            <div class="form-group">
-              <label for="email">Email:</label>
-              <input type="email" id="email" name="email" value="${user.email}" required>
-            </div>
-            <div class="form-group">
-              <label for="rol_id">Rol:</label>
-              <select id="rol_id" name="rol_id" required>
-                <option value="1" ${user.rol_id === 1 ? 'selected' : ''}>Admin</option>
-                <option value="2" ${user.rol_id === 2 ? 'selected' : ''}>Empleado</option>
-                <option value="3" ${user.rol_id === 3 ? 'selected' : ''}>Asistente</option>
-              </select>
-            </div>
-            <p class="form-note">Nota: La contraseña no se puede editar desde aquí. Se requiere un flujo de "restablecer contraseña" por seguridad.</p>
-            <div class="form-actions">
-              <button type="submit" class="btn-primary">Guardar Cambios</button>
-              <button type="button" id="cancel-btn" class="btn-secondary">Cancelar</button>
-            </div>
-          </form>
-        </div>
-      `;
+        `;
 
-      // Añadimos los event listeners después de renderizar el formulario
-      const form = document.getElementById('edit-user-form');
-      form.addEventListener('submit', handleFormSubmit);
+        const form = document.getElementById('edit-user-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const userData = Object.fromEntries(formData.entries());
 
-      document.getElementById('cancel-btn').addEventListener('click', () => {
-        router.navigate('/usuarios');
-      });
+            if (!userData.nombre || !userData.apellido || !userData.email || !userData.rol_id) {
+                Swal.fire('Campos Incompletos', 'Por favor, complete todos los campos requeridos.', 'warning');
+                return;
+            }
 
-    } catch (error) {
-      Swal.fire('Error', 'No se pudieron cargar los datos del usuario. ' + error.message, 'error');
-      router.navigate('/usuarios');
-    }
-  };
+            // Convertimos el rol_id a número para enviarlo correctamente
+            userData.rol_id = parseInt(userData.rol_id, 10);
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const userData = Object.fromEntries(formData.entries());
-    userData.rol_id = parseInt(userData.rol_id, 10);
+            try {
+                await userService.updateById(userId, userData);
+                Swal.fire({
+                    title: '¡Actualizado!',
+                    text: 'El usuario ha sido modificado exitosamente.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                router.navigate('/usuarios');
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo actualizar el usuario. ' + error.message, 'error');
+            }
+        });
 
-    try {
-      await userService.updateById(userId, userData);
-      Swal.fire({
-        title: '¡Actualizado!',
-        text: 'Los datos del usuario se han guardado correctamente.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      });
-      setTimeout(() => router.navigate('/usuarios'), 2000);
-    } catch (error) {
-      Swal.fire('Error', 'No se pudieron guardar los cambios. ' + error.message, 'error');
-    }
-  };
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+            router.navigate('/usuarios');
+        });
+    };
 
-  loadUserData();
+    init();
 };
