@@ -1,9 +1,9 @@
-// frontend/src/services/apiServices.js
+import { router } from '../router/index.js';
 
 const API_URL = 'http://localhost:3006/api';
 
 // ======================================================
-// SERVICIO DE AUTENTICACIÓN (Sin cambios)
+// SERVICIO DE AUTENTICACIÓN
 // ======================================================
 export const authService = {
   login: async (email, password) => {
@@ -26,201 +26,94 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    router.navigate('/login');
   },
   getCurrentUser: () => {
-    return JSON.parse(localStorage.getItem('user'));
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
   }
 };
 
 // ======================================================
-// FUNCIÓN DE AYUDA PARA HEADERS (Sin cambios)
+// MANEJADOR DE PETICIONES CENTRALIZADO
 // ======================================================
-const createAuthHeaders = () => {
+const fetchWithAuth = async (url, options = {}) => {
   const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.hash = '/login';
-    return;
-  }
-  return {
+  
+  const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    ...options.headers,
   };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { ...options, headers });
+
+  // --- LÓGICA CORREGIDA ---
+  if (res.status === 401) {
+    authService.logout(); // Cierra la sesión y redirige al login.
+    // Detenemos la promesa para evitar que el código que llamó a la función continúe y muestre un error.
+    return Promise.reject(new Error('Sesión expirada')); 
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Ocurrió un error en la petición.');
+  }
+  
+  if (res.headers.get("content-length") === "0" || res.status === 204) {
+      return {};
+  }
+  
+  return res.json();
 };
 
 // ======================================================
-// SERVICIOS EXISTENTES (Sin cambios)
+// SERVICIOS
 // ======================================================
-export const salaService = { /* ... código existente ... */ 
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/salas`, { headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al obtener las salas');}
-    return res.json();
-  },
-  getById: async (id) => {
-    const res = await fetch(`${API_URL}/salas/${id}`, { headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al obtener la sala');}
-    return res.json();
-  },
-  create: async (salaData) => {
-    const res = await fetch(`${API_URL}/salas`, { method: 'POST', headers: createAuthHeaders(), body: JSON.stringify(salaData) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al crear la sala');}
-    return res.json();
-  },
-  updateById: async (id, salaData) => {
-    const res = await fetch(`${API_URL}/salas/${id}`, { method: 'PUT', headers: createAuthHeaders(), body: JSON.stringify(salaData) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al actualizar la sala');}
-    return res.json();
-  },
-  deleteById: async (id) => {
-    const res = await fetch(`${API_URL}/salas/${id}`, { method: 'DELETE', headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al eliminar la sala');}
-    return res.json();
-  }
-};
-export const userService = { /* ... código existente ... */ 
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/usuarios`, { headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al obtener los usuarios');}
-    return res.json();
-  },
-  getById: async (id) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, { headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al obtener el usuario');}
-    return res.json();
-  },
-  create: async (userData) => {
-    const res = await fetch(`${API_URL}/usuarios`, { method: 'POST', headers: createAuthHeaders(), body: JSON.stringify(userData) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al crear el usuario');}
-    return res.json();
-  },
-  updateById: async (id, userData) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, { method: 'PUT', headers: createAuthHeaders(), body: JSON.stringify(userData) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al actualizar el usuario');}
-    return res.json();
-  },
-  deleteById: async (id) => {
-    const res = await fetch(`${API_URL}/usuarios/${id}`, { method: 'DELETE', headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al eliminar el usuario');}
-    return res.json();
-  }
-};
-export const reservaService = { /* ... código existente ... */ 
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/reservas`, { headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al obtener las reservas');}
-    return res.json();
-  },
-  create: async (reservaData) => {
-    const res = await fetch(`${API_URL}/reservas`, { method: 'POST', headers: createAuthHeaders(), body: JSON.stringify(reservaData) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al crear la reserva');}
-    return res.json();
-  },
-  cancelById: async (id) => {
-    const res = await fetch(`${API_URL}/reservas/${id}`, { method: 'DELETE', headers: createAuthHeaders() });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.message || 'Error al cancelar la reserva');}
-    return res.json();
-  }
-};
-export const dashboardService = { /* ... código existente ... */ 
-  getStats: async () => {
-    const res = await fetch(`${API_URL}/dashboard/stats`, { headers: createAuthHeaders() });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al obtener las estadísticas');
-    }
-    return res.json();
-  }
-};
-export const mantenimientoService = { /* ... código existente ... */ 
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/mantenimientos`, { headers: createAuthHeaders() });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al obtener los mantenimientos');
-    }
-    return res.json();
-  },
-  create: async (mantenimientoData) => {
-    const res = await fetch(`${API_URL}/mantenimientos`, {
-      method: 'POST',
-      headers: createAuthHeaders(),
-      body: JSON.stringify(mantenimientoData)
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al programar el mantenimiento');
-    }
-    return res.json();
-  },
-  deleteById: async (id) => {
-    const res = await fetch(`${API_URL}/mantenimientos/${id}`, {
-      method: 'DELETE',
-      headers: createAuthHeaders()
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al eliminar el mantenimiento');
-    }
-    return res.json();
-  }
+export const salaService = {
+  getAll: () => fetchWithAuth(`${API_URL}/salas`),
+  getAllInactive: () => fetchWithAuth(`${API_URL}/salas/inactivas`),
+  getById: (id) => fetchWithAuth(`${API_URL}/salas/${id}`),
+  create: (salaData) => fetchWithAuth(`${API_URL}/salas`, { method: 'POST', body: JSON.stringify(salaData) }),
+  updateById: (id, salaData) => fetchWithAuth(`${API_URL}/salas/${id}`, { method: 'PUT', body: JSON.stringify(salaData) }),
+  deactivateById: (id) => fetchWithAuth(`${API_URL}/salas/${id}`, { method: 'DELETE' }),
+  reactivateById: (id) => fetchWithAuth(`${API_URL}/salas/${id}/reactivate`, { method: 'PUT' }),
 };
 
-// ======================================================
-// NUEVO SERVICIO DE NOTIFICACIONES
-// ======================================================
+export const departamentoService = {
+  getAll: () => fetchWithAuth(`${API_URL}/departamentos`),
+};
+
+export const userService = {
+  getAll: () => fetchWithAuth(`${API_URL}/usuarios`),
+  getById: (id) => fetchWithAuth(`${API_URL}/usuarios/${id}`),
+  create: (userData) => fetchWithAuth(`${API_URL}/usuarios`, { method: 'POST', body: JSON.stringify(userData) }),
+  updateById: (id, userData) => fetchWithAuth(`${API_URL}/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
+  deleteById: (id) => fetchWithAuth(`${API_URL}/usuarios/${id}`, { method: 'DELETE' }),
+};
+
+export const reservaService = {
+    getAll: () => fetchWithAuth(`${API_URL}/reservas`),
+    create: (reservaData) => fetchWithAuth(`${API_URL}/reservas`, { method: 'POST', body: JSON.stringify(reservaData) }),
+    cancelById: (id) => fetchWithAuth(`${API_URL}/reservas/${id}`, { method: 'DELETE' }),
+};
+  
+export const mantenimientoService = {
+    getAll: () => fetchWithAuth(`${API_URL}/mantenimientos`),
+    create: (mantenimientoData) => fetchWithAuth(`${API_URL}/mantenimientos`, { method: 'POST', body: JSON.stringify(mantenimientoData) }),
+    deleteById: (id) => fetchWithAuth(`${API_URL}/mantenimientos/${id}`, { method: 'DELETE' }),
+};
+
+export const dashboardService = {
+    getStats: () => fetchWithAuth(`${API_URL}/dashboard/stats`),
+};
+
 export const notificacionService = {
-  /**
-   * Obtiene las notificaciones del usuario.
-   */
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/notificaciones`, { headers: createAuthHeaders() });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al obtener las notificaciones');
-    }
-    return res.json();
-  },
-
-  /**
-   * Obtiene el contador de notificaciones no leídas.
-   */
-  getUnreadCount: async () => {
-    const res = await fetch(`${API_URL}/notificaciones/unread-count`, { headers: createAuthHeaders() });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al obtener el contador');
-    }
-    return res.json();
-  },
-
-  /**
-   * Marca una notificación como leída.
-   * @param {number} id - El ID de la notificación.
-   */
-  markAsRead: async (id) => {
-    const res = await fetch(`${API_URL}/notificaciones/${id}/read`, {
-      method: 'PUT',
-      headers: createAuthHeaders()
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al marcar como leída');
-    }
-    return res.json();
-  },
-
-  /**
-   * Marca todas las notificaciones como leídas.
-   */
-  markAllAsRead: async () => {
-    const res = await fetch(`${API_URL}/notificaciones/read-all`, {
-      method: 'PUT',
-      headers: createAuthHeaders()
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Error al marcar todas como leídas');
-    }
-    return res.json();
-  }
+    getAll: () => fetchWithAuth(`${API_URL}/notificaciones`),
+    getUnreadCount: () => fetchWithAuth(`${API_URL}/notificaciones/unread-count`),
+    markAsRead: (id) => fetchWithAuth(`${API_URL}/notificaciones/${id}/read`, { method: 'PUT' }),
+    markAllAsRead: () => fetchWithAuth(`${API_URL}/notificaciones/read-all`, { method: 'PUT' }),
 };

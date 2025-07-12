@@ -24,28 +24,31 @@ export const MantenimientoCreatePage = (container) => {
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       const minDateTime = now.toISOString().slice(0, 16);
 
+      // --- HTML SIN EL ATRIBUTO 'required' ---
       container.innerHTML = `
         <div class="form-view-container">
           <h2>Programar Nuevo Mantenimiento</h2>
           <form id="create-mantenimiento-form" novalidate>
             <div class="form-group">
               <label for="sala_id">Seleccione la Sala:</label>
-              <select id="sala_id" name="sala_id" class="form-control" required>
-                <option value="" disabled selected>-- Elija una sala --</option>
-                ${salas.map(sala => `<option value="${sala.id}">${sala.nombre}</option>`).join('')}
-              </select>
+              <div class="custom-select-wrapper">
+                <select id="sala_id" name="sala_id" class="form-control">
+                  <option value="" disabled selected>-- Elija una sala --</option>
+                  ${salas.map(sala => `<option value="${sala.id}">${sala.nombre}</option>`).join('')}
+                </select>
+              </div>
             </div>
             <div class="form-group">
               <label for="motivo">Motivo del Mantenimiento:</label>
-              <input type="text" id="motivo" name="motivo" class="form-control" required placeholder="Ej: Limpieza profunda, Reparación proyector">
+              <input type="text" id="motivo" name="motivo" class="form-control" placeholder="Ej: Limpieza profunda, Reparación proyector">
             </div>
             <div class="form-group">
               <label for="fecha_inicio">Fecha y Hora de Inicio:</label>
-              <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" class="form-control" required min="${minDateTime}">
+              <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" class="form-control" min="${minDateTime}">
             </div>
             <div class="form-group">
               <label for="fecha_fin">Fecha y Hora de Fin:</label>
-              <input type="datetime-local" id="fecha_fin" name="fecha_fin" class="form-control" required min="${minDateTime}">
+              <input type="datetime-local" id="fecha_fin" name="fecha_fin" class="form-control" min="${minDateTime}">
             </div>
             <div class="form-actions">
               <button type="button" id="cancel-btn" class="btn btn-secondary">Cancelar</button>
@@ -77,13 +80,16 @@ export const MantenimientoCreatePage = (container) => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
+    
     const formData = new FormData(form);
     const mantenimientoData = Object.fromEntries(formData.entries());
     
+    // --- VALIDACIÓN MANUAL DE CAMPOS ---
+    if (!mantenimientoData.sala_id || !mantenimientoData.motivo || !mantenimientoData.fecha_inicio || !mantenimientoData.fecha_fin) {
+        Swal.fire('Campos Incompletos', 'Por favor, complete todos los campos requeridos.', 'warning');
+        return;
+    }
+
     if (new Date(mantenimientoData.fecha_fin) <= new Date(mantenimientoData.fecha_inicio)) {
         Swal.fire('Error de Fechas', 'La fecha de fin debe ser posterior a la fecha de inicio.', 'warning');
         return;

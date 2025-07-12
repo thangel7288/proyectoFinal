@@ -21,11 +21,11 @@ export const ReservaCreatePage = (container, salaId) => {
       const sala = await salaService.getById(salaId);
 
       // --- LÓGICA PARA LA FECHA MÍNIMA ---
-      // Obtenemos la fecha y hora actual y la formateamos para el input
       const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Ajusta a la zona horaria local
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       const minDateTime = now.toISOString().slice(0, 16);
 
+      // --- HTML SIN EL ATRIBUTO 'required' ---
       container.innerHTML = `
         <div class="form-view-container">
           <h2>Reservar Sala: ${sala.nombre}</h2>
@@ -34,15 +34,15 @@ export const ReservaCreatePage = (container, salaId) => {
           <form id="create-reserva-form" novalidate>
             <div class="form-group">
               <label for="motivo">Motivo de la Reserva:</label>
-              <input type="text" id="motivo" name="motivo" class="form-control" required placeholder="Ej: Reunión de equipo">
+              <input type="text" id="motivo" name="motivo" class="form-control" placeholder="Ej: Reunión de equipo">
             </div>
             <div class="form-group">
               <label for="fecha_inicio">Fecha y Hora de Inicio:</label>
-              <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" class="form-control" required min="${minDateTime}">
+              <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" class="form-control" min="${minDateTime}">
             </div>
             <div class="form-group">
               <label for="fecha_fin">Fecha y Hora de Fin:</label>
-              <input type="datetime-local" id="fecha_fin" name="fecha_fin" class="form-control" required min="${minDateTime}">
+              <input type="datetime-local" id="fecha_fin" name="fecha_fin" class="form-control" min="${minDateTime}">
             </div>
             <div class="form-actions">
               <button type="button" id="cancel-btn" class="btn btn-secondary">Cancelar</button>
@@ -56,7 +56,6 @@ export const ReservaCreatePage = (container, salaId) => {
       const fechaInicioInput = document.getElementById('fecha_inicio');
       const fechaFinInput = document.getElementById('fecha_fin');
 
-      // Añadimos un listener para que la fecha de fin no pueda ser anterior a la de inicio
       fechaInicioInput.addEventListener('change', () => {
         if (fechaInicioInput.value) {
           fechaFinInput.min = fechaInicioInput.value;
@@ -76,14 +75,15 @@ export const ReservaCreatePage = (container, salaId) => {
     e.preventDefault();
     const form = e.target;
     
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
-    
     const formData = new FormData(form);
     const reservaData = Object.fromEntries(formData.entries());
     
+    // --- VALIDACIÓN MANUAL DE CAMPOS ---
+    if (!reservaData.motivo || !reservaData.fecha_inicio || !reservaData.fecha_fin) {
+        Swal.fire('Campos Incompletos', 'Por favor, complete todos los campos requeridos.', 'warning');
+        return;
+    }
+
     if (new Date(reservaData.fecha_fin) <= new Date(reservaData.fecha_inicio)) {
         Swal.fire('Error de Fechas', 'La fecha de fin debe ser posterior a la fecha de inicio.', 'warning');
         return;
@@ -94,8 +94,11 @@ export const ReservaCreatePage = (container, salaId) => {
     try {
       await reservaService.create(reservaData);
       Swal.fire({
-        title: '¡Reserva Creada!', text: 'Tu reserva ha sido registrada exitosamente.', icon: 'success',
-        timer: 2000, showConfirmButton: false
+        title: '¡Reserva Creada!',
+        text: 'Tu reserva ha sido registrada exitosamente.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       router.navigate('/reservas');
     } catch (error) {

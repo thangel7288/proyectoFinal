@@ -1,68 +1,93 @@
-/* Estilos para todos los formularios */
-.sala-form, .login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem; /* Un poco más de espacio entre elementos */
-  text-align: left; /* Alineamos el texto de los labels a la izquierda */
+/* --- Estilos Generales de Formulario (Rediseñados) --- */
+
+/* Contenedor principal que envuelve al formulario para darle un aspecto de "tarjeta" */
+.form-view-container {
+  max-width: 600px; /* Limita el ancho del formulario en pantallas grandes */
+  margin: 2rem auto; /* Centra el formulario en la página */
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: var(--border-radius-lg, 12px); /* Un borde más redondeado */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07); /* Sombra suave para darle profundidad */
+}
+
+.form-view-container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--color-titulos, #333);
 }
 
 /* Grupo de label + input */
 .form-group {
   width: 100%;
-  padding: 12px 15px; /* Más padding horizontal */
-  border: 1px solid var(--color-borde);
-  border-radius: var(--border-radius);
-  font-size: 1rem;
+  margin-bottom: 1.5rem; /* Espacio entre cada campo del formulario */
 }
 
-/* Estilo para las etiquetas (labels) */
 .form-group label {
+  display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
+  font-size: 0.9rem;
+  color: #495057; /* Un gris oscuro, menos fuerte que el negro */
 }
 
-/* Estilo para los campos de texto (inputs) */
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="password"],
-.form-group input[type="number"] {
+/* --- Control de Formulario Unificado (Rediseñado) --- */
+
+.form-control {
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--border-radius);
-  font-size: 16px;
+  padding: 12px 15px;
+  font-size: 1rem;
+  color: #212529;
+  background-color: #f8f9fa; /* Un fondo muy sutil para diferenciarlo */
+  border: 1px solid #dee2e6; /* Borde más suave */
+  border-radius: var(--border-radius, 6px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Estilo para cuando el input está seleccionado (focus) */
-.form-group input:focus {
+.form-control:focus {
   outline: none;
   border-color: var(--color-primario);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); /* Sombra de foco más sutil */
 }
 
-/* Contenedor para los botones de acción (Guardar, Cancelar) */
+/* --- Combobox Personalizado (Rediseñado con flecha SVG) --- */
+
+.custom-select-wrapper {
+  position: relative;
+  display: block;
+}
+
+.custom-select-wrapper::after {
+  /* Usamos un SVG para una flecha más nítida y moderna */
+  content: ' ';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+  pointer-events: none;
+}
+
+.custom-select-wrapper .form-control {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding-right: 40px !important;
+}
+
+/* --- Acciones del Formulario --- */
+
 .form-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
-}
-
-/* === Estilos Específicos para el Formulario de Login === */
-
-.login-container {
-  text-align: center; /* Centramos el título y el botón */
-}
-
-.login-container h2 {
-  font-size: 2.25rem; /* Hacemos el título 'Iniciar Sesión' mucho más grande */
-  margin-bottom: 2rem;
-}
-
-.login-form .form-group {
-  text-align: left; /* Alineamos las etiquetas a la izquierda */
-}
-
-.login-form input {
-  padding: 15px;      /* Hacemos los campos de texto más altos */
-  font-size: 1.1rem;  /* Agrandamos el texto dentro de los campos */
+  margin-top: 2rem; /* Más espacio antes de los botones */
+  border-top: 1px solid #e9ecef; /* Línea separadora sutil */
+  padding-top: 1.5rem;
 }

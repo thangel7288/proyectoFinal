@@ -10,6 +10,14 @@ export class Sala {
   }
 
   /**
+   * Obtiene todas las salas que están marcadas como INACTIVAS.
+   */
+  static async getAllInactive() {
+    const [rows] = await pool.query('SELECT * FROM salas WHERE activa = FALSE');
+    return rows;
+  }
+
+  /**
    * Encuentra una sala por su ID, sin importar si está activa o no.
    */
   static async findById(id) {
@@ -21,10 +29,10 @@ export class Sala {
    * Crea una nueva sala en la base de datos.
    */
   static async create(salaData) {
-    const { nombre, capacidad, ubicacion, equipamiento } = salaData;
+    const { nombre, capacidad, ubicacion } = salaData;
     const [result] = await pool.query(
-      'INSERT INTO salas (nombre, capacidad, ubicacion, equipamiento) VALUES (?, ?, ?, ?)',
-      [nombre, capacidad, ubicacion, JSON.stringify(equipamiento)]
+      'INSERT INTO salas (nombre, capacidad, ubicacion) VALUES (?, ?, ?)',
+      [nombre, capacidad, ubicacion]
     );
     return { id: result.insertId, ...salaData };
   }
@@ -33,10 +41,10 @@ export class Sala {
    * Actualiza los datos de una sala por su ID.
    */
   static async updateById(id, salaData) {
-    const { nombre, capacidad, ubicacion, equipamiento } = salaData;
+    const { nombre, capacidad, ubicacion } = salaData;
     const [result] = await pool.query(
-      'UPDATE salas SET nombre = ?, capacidad = ?, ubicacion = ?, equipamiento = ? WHERE id = ?',
-      [nombre, capacidad, ubicacion, JSON.stringify(equipamiento), id]
+      'UPDATE salas SET nombre = ?, capacidad = ?, ubicacion = ? WHERE id = ?',
+      [nombre, capacidad, ubicacion, id]
     );
     return result.affectedRows;
   }
@@ -44,28 +52,33 @@ export class Sala {
   /**
    * Desactiva una sala (soft delete) cambiando su estado a inactivo.
    */
-  static async desactivarById(id) {
+  static async deactivateById(id) {
     const [result] = await pool.query('UPDATE salas SET activa = FALSE WHERE id = ?', [id]);
     return result.affectedRows;
   }
 
   /**
-   * Verifica si una sala tiene reservas ACTIVAS asociadas.
+   * Reactiva una sala cambiando su estado a activo.
+   */
+  static async reactivateById(id) {
+    const [result] = await pool.query('UPDATE salas SET activa = TRUE WHERE id = ?', [id]);
+    return result.affectedRows;
+  }
+
+  /**
+   * Verifica si una sala tiene reservas activas a futuro.
    */
   static async tieneReservasActivas(salaId) {
-    const query = "SELECT id FROM reservas WHERE sala_id = ? AND estado = 'confirmada' LIMIT 1";
+    const query = "SELECT id FROM reservas WHERE sala_id = ? AND estado = 'confirmada' AND fecha_fin > NOW() LIMIT 1";
     const [rows] = await pool.query(query, [salaId]);
     return rows.length > 0;
   }
 
-  // --- NUEVO MÉTODO AÑADIDO ---
   /**
-   * Verifica si una sala tiene mantenimientos programados.
-   * @param {number} salaId - El ID de la sala.
-   * @returns {boolean} - Devuelve true si tiene mantenimientos, false si no.
+   * Verifica si una sala tiene mantenimientos programados a futuro.
    */
-  static async tieneMantenimientos(salaId) {
-    const query = "SELECT id FROM mantenimientos WHERE sala_id = ? LIMIT 1";
+  static async tieneMantenimientosActivos(salaId) {
+    const query = "SELECT id FROM mantenimientos WHERE sala_id = ? AND fecha_fin > NOW() LIMIT 1";
     const [rows] = await pool.query(query, [salaId]);
     return rows.length > 0;
   }
